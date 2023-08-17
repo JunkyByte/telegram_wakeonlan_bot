@@ -73,10 +73,13 @@ async def list_hosts(client: Client, message: Message):
         m += f"**{host['name']}**\n"
         m += f"MAC: {host['mac']}\n"
         m += f"IP: {host['ip']}\n"
-        if check_if_up(host['ip']):
-            m += "Host is up\n"
-        else:
-            m += "Host is down\n"
+        try:
+            if check_if_up(host['ip']):
+                m += "Host is up\n"
+            else:
+                m += "Host is down\n"
+        except PermissionError:
+            pass
         m += "\n"
     if m == "":
         m += "No hosts saved"
@@ -103,7 +106,13 @@ async def wake_host_callback(_client: Client, callback_query: CallbackQuery):
     hostname = callback_query.data.split("_")[1]
     host_list = load_hosts("hosts.pkl")
     host = [h for h in host_list if h["name"] == hostname][0]
-    if check_if_up(host['ip']):
+    try:
+
+        is_up = check_if_up(host['ip'])
+    except PermissionError:
+        is_up = False
+
+    if is_up:
         await callback_query.edit_message_text(f"Host {hostname} is already up!")
     else:
         mac_parsed = host["mac"].replace(":", ".")
